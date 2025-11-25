@@ -2310,6 +2310,11 @@ baseline-browser-mapping@^2.8.25:
   resolved "https://registry.npmjs.org/baseline-browser-mapping/-/baseline-browser-mapping-2.8.31.tgz"
   integrity sha512-a28v2eWrrRWPpJSzxc+mKwm0ZtVx/G8SepdQZDArnXYU/XS+IF6mp8aB/4E+hH1tyGCoDo3KlUCdlSxGDsRkAw==
 
+big-integer@^1.6.51:
+  version "1.6.52"
+  resolved "https://registry.npmjs.org/big-integer/-/big-integer-1.6.52.tgz"
+  integrity sha512-QxD8cf2eVqJOOz63z6JIN9BzvVs/dlySa5HGSBH5xtR8dPteIRQnBxxKqkNTiT6jbDTF6jAfrd4oMcND9RGbQg==
+
 bl@^4.1.0:
   version "4.1.0"
   resolved "https://registry.npmjs.org/bl/-/bl-4.1.0.tgz"
@@ -3386,6 +3391,11 @@ flatbuffers@^25.9.23:
   version "25.9.23"
   resolved "https://registry.npmjs.org/flatbuffers/-/flatbuffers-25.9.23.tgz"
   integrity sha512-MI1qs7Lo4Syw0EOzUl0xjs2lsoeqFku44KpngfIduHBYvzm8h2+7K8YMQh1JtVVVrUvhLpNwqVi4DERegUJhPQ==
+
+flatbuffers@2.0.6:
+  version "2.0.6"
+  resolved "https://registry.npmjs.org/flatbuffers/-/flatbuffers-2.0.6.tgz"
+  integrity sha512-QTTZTXTbVfuOVQu2X6eLOw4vefUxnFJZxAKeN3rEPhjEzBtIbehimJLfVGHPM8iX0Na+9i76SBEg0skf0c0sCA==
 
 flatted@^3.2.9:
   version "3.3.3"
@@ -5354,6 +5364,14 @@ react-is@^19.1.1:
   version "19.2.0"
   resolved "https://registry.npmjs.org/react-is/-/react-is-19.2.0.tgz"
   integrity sha512-x3Ax3kNSMIIkyVYhWPyO09bu0uttcAIoecO/um/rKGQ4EltYWVYtyiGkS/3xMynrbVQdS69Jhlv8FXUEZehlzA==
+
+react-native-fast-encoder@^0.3.1:
+  version "0.3.1"
+  resolved "https://registry.npmjs.org/react-native-fast-encoder/-/react-native-fast-encoder-0.3.1.tgz"
+  integrity sha512-D5ZEbffxayZImtUUErbNod+7IvJITkxTCPZAQTFg6lrSjl/443Mk5CvT9nKpJC1w4cg2llWk6QP8nczij5ClcQ==
+  dependencies:
+    big-integer "^1.6.51"
+    flatbuffers "2.0.6"
 
 react-native-safe-area-context@^5.5.2:
   version "5.6.2"
