@@ -1,0 +1,10 @@
+// FlatBuffers schema for test data
+namespace TestData;
+
+table TestData {
+  foo: string;
+  foo_number: int32;
+}
+
+root_type TestData;
+
