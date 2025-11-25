@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { encode, decode } from '@msgpack/msgpack';
 import * as flatbuffers from 'flatbuffers';
+import { TestData as TestDataFB } from './schemas/generated/test-data/test-data';
 
 // React Native provides performance API globally
 declare const performance: {
@@ -98,7 +99,7 @@ function SerializationTest() {
   };
 
   // FlatBuffers serialization test
-  // Using low-level API to create a simple table structure
+  // Using generated schema classes
   const testFlatBuffers = (): TestResult => {
     const startSerialize = performance.now();
     let serialized: Uint8Array[] = [];
@@ -107,15 +108,14 @@ function SerializationTest() {
       const builder = new flatbuffers.Builder(1024);
       const fooOffset = builder.createString('bar');
 
-      // Create a simple table with 2 fields:
-      // - field 0: string (foo)
-      // - field 1: int32 (foo_number)
-      builder.startObject(2);
-      builder.addFieldOffset(0, fooOffset, 0);
-      builder.addFieldInt32(1, i, 0);
-      const offset = builder.endObject();
-      builder.finish(offset);
+      // Create TestData using generated schema
+      const testDataOffset = TestDataFB.createTestData(
+        builder,
+        fooOffset,
+        i, // foo_number increments to avoid caching
+      );
 
+      builder.finish(testDataOffset);
       serialized.push(builder.asUint8Array());
     }
 
@@ -124,46 +124,22 @@ function SerializationTest() {
     const startDeserialize = performance.now();
     for (let i = 0; i < ITERATIONS; i++) {
       const buf = new flatbuffers.ByteBuffer(serialized[i]);
-      // Root offset is stored at the end of the buffer (last 4 bytes)
-      buf.setPosition(serialized[i].length - 4);
-      const root = buf.readInt32(buf.position());
+      const testData = TestDataFB.getRootAsTestData(buf);
 
-      // Deserialize using low-level API
-      // FlatBuffers format: root points to table, table[0] points to vtable
-      buf.setPosition(root);
-      const vtableOffset = root - buf.readInt32(root);
+      // Read values using generated getters
+      const foo = testData.foo();
+      const fooNumber = testData.fooNumber();
 
-      // Read vtable: [vtable_size: 2 bytes][object_size: 2 bytes][field_offsets: 2 bytes each]
-      // Field offsets are stored as 16-bit values relative to table start
-      const field0Offset = buf.readInt16(vtableOffset + 4); // Skip vtable_size and object_size
-      const field1Offset = buf.readInt16(vtableOffset + 6);
-
-      // Read field values from table
-      if (field0Offset !== 0) {
-        // Read string offset (relative to table position)
-        const stringOffset = buf.readInt32(root + field0Offset);
-        if (stringOffset !== 0) {
-          const stringPos = root + field0Offset + stringOffset;
-          // Read string length to ensure we're reading valid data
-          const stringLength = buf.readInt32(stringPos);
-          // Verify string length matches expected ("bar" = 3 bytes)
-          if (stringLength !== 3) {
-            console.warn(
-              `FlatBuffers string length mismatch at iteration ${i}`,
-            );
-          }
-        }
+      // Verify values match expected (ensures deserialization works correctly)
+      if (foo !== 'bar') {
+        console.warn(
+          `FlatBuffers string mismatch at iteration ${i}: expected 'bar', got '${foo}'`,
+        );
       }
-
-      if (field1Offset !== 0) {
-        // Read int32 value from table
-        const numberValue = buf.readInt32(root + field1Offset);
-        // Verify number value matches expected (ensures deserialization works correctly)
-        if (numberValue !== i) {
-          console.warn(
-            `FlatBuffers number mismatch at iteration ${i}: expected ${i}, got ${numberValue}`,
-          );
-        }
+      if (fooNumber !== i) {
+        console.warn(
+          `FlatBuffers number mismatch at iteration ${i}: expected ${i}, got ${fooNumber}`,
+        );
       }
     }
 

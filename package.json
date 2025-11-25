@@ -7,7 +7,8 @@
     "ios": "react-native run-ios",
     "lint": "eslint .",
     "start": "react-native start",
-    "test": "jest"
+    "test": "jest",
+    "build-schema": "mkdir -p schemas/generated && flatc --ts --gen-mutable -o schemas/generated schemas/TestData.fbs"
   },
   "dependencies": {
     "@msgpack/msgpack": "^3.1.2",
