@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { encode, decode } from '@msgpack/msgpack';
 import * as flatbuffers from 'flatbuffers';
 import { TestData as TestDataFB } from './schemas/generated/test-data/test-data';
@@ -31,6 +32,7 @@ interface TestData {
 function SerializationTest() {
   const [results, setResults] = useState<TestResult[]>([]);
   const [isRunning, setIsRunning] = useState(false);
+  const safeAreaInsets = useSafeAreaInsets();
 
   const ITERATIONS = 10000;
 
@@ -180,7 +182,7 @@ function SerializationTest() {
 
   return (
     <ScrollView style={styles.container}>
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: safeAreaInsets.top }]}>
         <Text style={styles.title}>Serialization Performance Test</Text>
         <Text style={styles.subtitle}>
           Testing JSON, MessagePack, and FlatBuffers
@@ -242,7 +244,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
   },
   header: {
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
