@@ -107,16 +107,15 @@ function SerializationTest() {
   // FlatBuffers serialization test
   // Using generated schema classes
   const testFlatBuffers = (): TestResult => {
-    const startSerialize = performance.now();
-    let serialized: Uint8Array[] = [];
-
+    const serialized: Uint8Array[] = new Array(ITERATIONS);
     const builder = new flatbuffers.Builder(1024);
 
+    const startSerialize = performance.now();
     for (let i = 0; i < ITERATIONS; i++) {
       builder.clear();
+
       const fooOffset = builder.createString('bar');
 
-      // Create TestData using generated schema
       const testDataOffset = TestDataFB.createTestData(
         builder,
         fooOffset,
@@ -124,24 +123,23 @@ function SerializationTest() {
       );
 
       builder.finish(testDataOffset);
-      serialized.push(builder.asUint8Array());
-    }
 
+      const buf = builder.asUint8Array();
+      serialized[i] = buf.slice(); // важный момент: копия!
+    }
     const serializeTime = performance.now() - startSerialize;
 
     const startDeserialize = performance.now();
-    let sum = 0; // Use result to prevent optimization
+    let sum = 0;
     for (let i = 0; i < ITERATIONS; i++) {
       const buf = new flatbuffers.ByteBuffer(serialized[i]);
       const testData = TestDataFB.getRootAsTestData(buf);
 
-      // Read values using generated getters
       const foo = testData.foo();
       const fooNumber = testData.fooNumber();
 
-      sum += fooNumber; // Use the result
+      sum += fooNumber + (foo ? foo.length : 0);
     }
-
     const deserializeTime = performance.now() - startDeserialize;
     const totalTime = serializeTime + deserializeTime;
 
