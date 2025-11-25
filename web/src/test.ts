@@ -2,6 +2,7 @@ import { encode, decode } from '@msgpack/msgpack';
 import * as flatbuffers from 'flatbuffers';
 import { TestData as TestDataFB } from '../schemas/generated/test-data/test-data';
 import * as avro from 'avsc';
+import largeJsonData from './5MB.json';
 
 interface TestResult {
   format: string;
@@ -187,6 +188,52 @@ const testAvro = (): TestResult => {
   };
 };
 
+// Large JSON test (5MB file)
+const testLargeJSON = (): TestResult => {
+  const startSerialize = performance.now();
+  const serialized = JSON.stringify(largeJsonData);
+  const serializeTime = performance.now() - startSerialize;
+
+  const startDeserialize = performance.now();
+  const parsed = JSON.parse(serialized);
+  // Use result to prevent optimization
+  const sum = Array.isArray(parsed) ? parsed.length : 0;
+  if (sum === 0) console.log('Large JSON sum:', sum);
+  const deserializeTime = performance.now() - startDeserialize;
+  const totalTime = serializeTime + deserializeTime;
+
+  return {
+    format: 'JSON (5MB)',
+    serializeTime,
+    deserializeTime,
+    totalTime,
+    iterations: 1,
+  };
+};
+
+// Large MessagePack test (5MB file)
+const testLargeMessagePack = (): TestResult => {
+  const startSerialize = performance.now();
+  const serialized = encode(largeJsonData);
+  const serializeTime = performance.now() - startSerialize;
+
+  const startDeserialize = performance.now();
+  const parsed = decode(serialized);
+  // Use result to prevent optimization
+  const sum = Array.isArray(parsed) ? (parsed as any[]).length : 0;
+  if (sum === 0) console.log('Large MessagePack sum:', sum);
+  const deserializeTime = performance.now() - startDeserialize;
+  const totalTime = serializeTime + deserializeTime;
+
+  return {
+    format: 'MessagePack (5MB)',
+    serializeTime,
+    deserializeTime,
+    totalTime,
+    iterations: 1,
+  };
+};
+
 const formatTime = (ms: number): string => {
   return `${ms.toFixed(2)} ms`;
 };
@@ -215,11 +262,38 @@ const runAllTests = async () => {
 
   await new Promise<void>(resolve => setTimeout(() => resolve(), 100));
 
+  await new Promise<void>(resolve => setTimeout(() => resolve(), 100));
+
   const flatbuffersResult = testFlatBuffers();
   updateResults([jsonResult, msgpackResult, flatbuffersResult]);
 
+  await new Promise<void>(resolve => setTimeout(() => resolve(), 100));
+
   const avroResult = testAvro();
   updateResults([jsonResult, msgpackResult, flatbuffersResult, avroResult]);
+
+  await new Promise<void>(resolve => setTimeout(() => resolve(), 100));
+
+  const largeJsonResult = testLargeJSON();
+  updateResults([
+    jsonResult,
+    msgpackResult,
+    flatbuffersResult,
+    avroResult,
+    largeJsonResult,
+  ]);
+
+  await new Promise<void>(resolve => setTimeout(() => resolve(), 100));
+
+  const largeMsgpackResult = testLargeMessagePack();
+  updateResults([
+    jsonResult,
+    msgpackResult,
+    flatbuffersResult,
+    avroResult,
+    largeJsonResult,
+    largeMsgpackResult,
+  ]);
 
   runButton.disabled = false;
   runButton.textContent = 'Run Performance Tests';
@@ -250,9 +324,11 @@ const updateResults = (results: TestResult[]) => {
       </div>
       <div class="result-row">
         <span class="result-label">Avg per operation:</span>
-        <span class="result-value">${formatTime(
-          result.totalTime / (result.iterations * 2),
-        )}</span>
+        <span class="result-value">${
+          result.iterations > 1
+            ? formatTime(result.totalTime / (result.iterations * 2))
+            : 'N/A (single operation)'
+        }</span>
       </div>
     </div>
   `,
