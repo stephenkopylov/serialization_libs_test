@@ -1,6 +1,8 @@
 import { encode, decode } from '@msgpack/msgpack';
 import * as flatbuffers from 'flatbuffers';
 import { TestData as TestDataFB } from '../schemas/generated/test-data/test-data';
+import { Person } from '../schemas/generated/person/person';
+import { PersonList } from '../schemas/generated/person/person-list';
 import * as avro from 'avsc';
 import largeJsonData from './5MB.json';
 
@@ -234,6 +236,69 @@ const testLargeMessagePack = (): TestResult => {
   };
 };
 
+// Large FlatBuffers test (5MB file)
+const testLargeFlatBuffers = (): TestResult => {
+  const data = largeJsonData as any[];
+
+  const startSerialize = performance.now();
+  const builder = new flatbuffers.Builder(1024 * 1024 * 10); // 10MB initial capacity
+
+  // Create Person objects
+  const personOffsets: flatbuffers.Offset[] = [];
+  for (let i = 0; i < data.length; i++) {
+    const person = data[i];
+    const nameOffset = builder.createString(person.name || '');
+    const languageOffset = builder.createString(person.language || '');
+    const idOffset = builder.createString(person.id || '');
+    const bioOffset = builder.createString(person.bio || '');
+    const version = person.version || 0.0;
+
+    const personOffset = Person.createPerson(
+      builder,
+      nameOffset,
+      languageOffset,
+      idOffset,
+      bioOffset,
+      version,
+    );
+    personOffsets.push(personOffset);
+  }
+
+  // Create PersonList
+  const personsVector = PersonList.createPersonsVector(builder, personOffsets);
+  const personListOffset = PersonList.createPersonList(builder, personsVector);
+  builder.finish(personListOffset);
+
+  const serialized = builder.asUint8Array();
+  const serializeTime = performance.now() - startSerialize;
+
+  const startDeserialize = performance.now();
+  const buf = new flatbuffers.ByteBuffer(serialized);
+  const personList = PersonList.getRootAsPersonList(buf);
+
+  // Use result to prevent optimization
+  let sum = 0;
+  const length = personList.personsLength();
+  for (let i = 0; i < length; i++) {
+    const person = personList.persons(i);
+    if (person) {
+      sum += person.version();
+    }
+  }
+  if (sum === 0) console.log('Large FlatBuffers sum:', sum);
+
+  const deserializeTime = performance.now() - startDeserialize;
+  const totalTime = serializeTime + deserializeTime;
+
+  return {
+    format: 'FlatBuffers (5MB)',
+    serializeTime,
+    deserializeTime,
+    totalTime,
+    iterations: 1,
+  };
+};
+
 const formatTime = (ms: number): string => {
   return `${ms.toFixed(2)} ms`;
 };
@@ -293,6 +358,19 @@ const runAllTests = async () => {
     avroResult,
     largeJsonResult,
     largeMsgpackResult,
+  ]);
+
+  await new Promise<void>(resolve => setTimeout(() => resolve(), 100));
+
+  const largeFlatbuffersResult = testLargeFlatBuffers();
+  updateResults([
+    jsonResult,
+    msgpackResult,
+    flatbuffersResult,
+    avroResult,
+    largeJsonResult,
+    largeMsgpackResult,
+    largeFlatbuffersResult,
   ]);
 
   runButton.disabled = false;

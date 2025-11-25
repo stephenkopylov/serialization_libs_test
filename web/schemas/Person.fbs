@@ -1,0 +1,17 @@
+// FlatBuffers schema for Person data from large JSON
+namespace Person;
+
+table Person {
+  name: string;
+  language: string;
+  id: string;
+  bio: string;
+  version: float32;
+}
+
+table PersonList {
+  persons: [Person];
+}
+
+root_type PersonList;
+
