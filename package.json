@@ -10,10 +10,13 @@
     "test": "jest"
   },
   "dependencies": {
+    "@msgpack/msgpack": "^3.1.2",
+    "@react-native/new-app-screen": "0.82.1",
+    "flatbuffers": "^25.9.23",
     "react": "19.1.1",
     "react-native": "0.82.1",
-    "@react-native/new-app-screen": "0.82.1",
-    "react-native-safe-area-context": "^5.5.2"
+    "react-native-safe-area-context": "^5.5.2",
+    "text-encoding-polyfill": "^0.6.7"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
