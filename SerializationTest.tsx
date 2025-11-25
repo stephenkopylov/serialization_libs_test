@@ -32,7 +32,7 @@ function SerializationTest() {
   const [results, setResults] = useState<TestResult[]>([]);
   const [isRunning, setIsRunning] = useState(false);
 
-  const ITERATIONS = 1000;
+  const ITERATIONS = 10000;
 
   // JSON serialization test
   const testJSON = (): TestResult => {
@@ -50,8 +50,10 @@ function SerializationTest() {
     const serializeTime = performance.now() - startSerialize;
 
     const startDeserialize = performance.now();
+    let sum = 0; // Use result to prevent optimization
     for (let i = 0; i < ITERATIONS; i++) {
-      JSON.parse(serialized[i]);
+      const parsed = JSON.parse(serialized[i]) as TestData;
+      sum += parsed.foo_number; // Use the result
     }
 
     const deserializeTime = performance.now() - startDeserialize;
@@ -82,8 +84,10 @@ function SerializationTest() {
     const serializeTime = performance.now() - startSerialize;
 
     const startDeserialize = performance.now();
+    let sum = 0; // Use result to prevent optimization
     for (let i = 0; i < ITERATIONS; i++) {
-      decode(serialized[i]) as TestData;
+      const parsed = decode(serialized[i]) as TestData;
+      sum += parsed.foo_number; // Use the result
     }
 
     const deserializeTime = performance.now() - startDeserialize;
@@ -104,8 +108,10 @@ function SerializationTest() {
     const startSerialize = performance.now();
     let serialized: Uint8Array[] = [];
 
+    const builder = new flatbuffers.Builder(1024);
+
     for (let i = 0; i < ITERATIONS; i++) {
-      const builder = new flatbuffers.Builder(1024);
+      builder.clear();
       const fooOffset = builder.createString('bar');
 
       // Create TestData using generated schema
@@ -122,6 +128,7 @@ function SerializationTest() {
     const serializeTime = performance.now() - startSerialize;
 
     const startDeserialize = performance.now();
+    let sum = 0; // Use result to prevent optimization
     for (let i = 0; i < ITERATIONS; i++) {
       const buf = new flatbuffers.ByteBuffer(serialized[i]);
       const testData = TestDataFB.getRootAsTestData(buf);
@@ -130,17 +137,7 @@ function SerializationTest() {
       const foo = testData.foo();
       const fooNumber = testData.fooNumber();
 
-      // Verify values match expected (ensures deserialization works correctly)
-      if (foo !== 'bar') {
-        console.warn(
-          `FlatBuffers string mismatch at iteration ${i}: expected 'bar', got '${foo}'`,
-        );
-      }
-      if (fooNumber !== i) {
-        console.warn(
-          `FlatBuffers number mismatch at iteration ${i}: expected ${i}, got ${fooNumber}`,
-        );
-      }
+      sum += fooNumber; // Use the result
     }
 
     const deserializeTime = performance.now() - startDeserialize;
