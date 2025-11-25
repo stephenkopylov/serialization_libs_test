@@ -1,6 +1,7 @@
 import { encode, decode } from '@msgpack/msgpack';
 import * as flatbuffers from 'flatbuffers';
 import { TestData as TestDataFB } from '../schemas/generated/test-data/test-data';
+import * as avro from 'avsc';
 
 interface TestResult {
   format: string;
@@ -24,7 +25,7 @@ const testJSON = (): TestResult => {
 
   for (let i = 0; i < ITERATIONS; i++) {
     const data: TestData = {
-      foo: 'bar',
+      foo: `bar${i}`,
       foo_number: i, // Increment to avoid caching
     };
     serialized.push(JSON.stringify(data));
@@ -140,6 +141,52 @@ const testFlatBuffers = (): TestResult => {
   };
 };
 
+// Avro serialization test
+const testAvro = (): TestResult => {
+  // Define Avro schema
+  const schema = avro.Type.forSchema({
+    type: 'record',
+    name: 'TestData',
+    fields: [
+      { name: 'foo', type: 'string' },
+      { name: 'foo_number', type: 'int' },
+    ],
+  });
+
+  const startSerialize = performance.now();
+  let serialized: Buffer[] = [];
+
+  for (let i = 0; i < ITERATIONS; i++) {
+    const data: TestData = {
+      foo: 'bar',
+      foo_number: i, // Increment to avoid caching
+    };
+    serialized.push(schema.toBuffer(data));
+  }
+
+  const serializeTime = performance.now() - startSerialize;
+
+  const startDeserialize = performance.now();
+  let sum = 0; // Use result to prevent optimization
+  for (let i = 0; i < ITERATIONS; i++) {
+    const parsed = schema.fromBuffer(serialized[i]) as TestData;
+    sum += parsed.foo_number; // Use the result
+  }
+  // Prevent dead code elimination
+  if (sum === 0) console.log('Avro sum:', sum);
+
+  const deserializeTime = performance.now() - startDeserialize;
+  const totalTime = serializeTime + deserializeTime;
+
+  return {
+    format: 'Avro',
+    serializeTime,
+    deserializeTime,
+    totalTime,
+    iterations: ITERATIONS,
+  };
+};
+
 const formatTime = (ms: number): string => {
   return `${ms.toFixed(2)} ms`;
 };
@@ -170,6 +217,9 @@ const runAllTests = async () => {
 
   const flatbuffersResult = testFlatBuffers();
   updateResults([jsonResult, msgpackResult, flatbuffersResult]);
+
+  const avroResult = testAvro();
+  updateResults([jsonResult, msgpackResult, flatbuffersResult, avroResult]);
 
   runButton.disabled = false;
   runButton.textContent = 'Run Performance Tests';
